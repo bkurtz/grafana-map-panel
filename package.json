@@ -1,0 +1,25 @@
+{
+  "name": "bkurtz-map-panel",
+  "version": "1.0.0",
+  "description": "Map Panel",
+  "scripts": {
+    "build": "grafana-toolkit plugin:build",
+    "test": "grafana-toolkit plugin:test",
+    "dev": "grafana-toolkit plugin:dev",
+    "watch": "grafana-toolkit plugin:dev --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bkurtz/grafana-map-panel.git"
+  },
+  "author": "Ben Kurtz",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/bkurtz/grafana-map-panel/issues"
+  },
+  "devDependencies": {
+    "@grafana/data": "next",
+    "@grafana/toolkit": "next",
+    "@grafana/ui": "next"
+  }
+}
