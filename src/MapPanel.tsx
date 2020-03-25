@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { PanelProps } from '@grafana/data';
-import { MapOptions, ValuePolyProps } from 'types';
+import { MapOptions, ValuePolyProps, PolyMap } from 'types';
 
 interface Props extends PanelProps<MapOptions> {}
 
@@ -16,6 +16,19 @@ class MapPoly extends PureComponent<ValuePolyProps> {
 export class MapPanel extends PureComponent<Props> {
 	render() {
 		const { options, data, width, height } = this.props;
+
+		//const powerData = data.series.filter((x) => (x.refId==="A"));
+		const polyData = data.series.filter((x) => (x.refId==="B"));
+		let polys: PolyMap = {};
+		if(polyData.length) {
+			let polyRaw = polyData[0].fields[1].values;
+			let polyId = polyData[0].fields[0].values;
+			for(let i = 0; i < polyId.length; i++) {
+				polys[polyId.get(i)] = polyRaw.get(i);
+			}
+		} else {
+			polys = options.polys;
+		}
 
 		return (
 			<div
