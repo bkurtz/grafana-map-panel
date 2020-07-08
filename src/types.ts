@@ -1,5 +1,5 @@
 export interface PolyMap {
-	[key: number]: number[][2];
+	[key: string]: number[][];
 }
 
 export interface MapOptions {

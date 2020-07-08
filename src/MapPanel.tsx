@@ -4,6 +4,11 @@ import { MapOptions, ValuePolyProps, PolyMap } from 'types';
 
 interface Props extends PanelProps<MapOptions> {}
 
+function sql2dArrayStringToArray (a:string) {
+	// a will be in the format {{x1,y1}, {x2,y2}, {x3,y3}}
+	return a.substring(2,a.length-2).split(`},{`).map(x=>x.split(`,`).map(y=>+y));
+}
+
 class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
 		const { x, y } = this.props;
@@ -17,18 +22,27 @@ export class MapPanel extends PureComponent<Props> {
 	render() {
 		const { options, data, width, height } = this.props;
 
-		//const powerData = data.series.filter((x) => (x.refId==="A"));
+		const powerData = data.series.filter((x) => (x.refId==="A"));
 		const polyData = data.series.filter((x) => (x.refId==="B"));
+		// Get the configured map polygon coordinates, either from a data source (should be query B) or from the configuration
 		let polys: PolyMap = {};
 		if(polyData.length) {
 			let polyRaw = polyData[0].fields[1].values;
 			let polyId = polyData[0].fields[0].values;
 			for(let i = 0; i < polyId.length; i++) {
-				polys[polyId.get(i)] = polyRaw.get(i);
+				polys[String(polyId.get(i))] = sql2dArrayStringToArray(polyRaw.get(i));
 			}
 		} else {
 			polys = options.polys;
 		}
+
+		// generate polygons
+		const mapPolys = powerData.map( (p) => {
+			let panelID: string = p.name as string;
+			let panelPoly: number[][] = polys[panelID];
+			let panelOrigin: number[] = panelPoly[0];
+			<MapPoly x={panelOrigin[0] as number} y={panelOrigin[1] as number} />
+		});
 
 		return (
 			<div
@@ -52,6 +66,7 @@ export class MapPanel extends PureComponent<Props> {
 				>
 					<g>
 						<MapPoly x={20} y={20} />
+						{mapPolys}
 					</g>
 				</svg>
 
