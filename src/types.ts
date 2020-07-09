@@ -14,4 +14,6 @@ export const defaults: MapOptions = {
 
 export interface ValuePolyProps {
 	p: number[][];
+	center: number[];
+	scale: number;
 }

@@ -9,11 +9,23 @@ function sql2dArrayStringToArray (a:string) {
 	return a.substring(2,a.length-2).split(`},{`).map(x=>x.split(`,`).map(y=>+y));
 }
 
+function array_min(p: number[][]) {
+	return p.reduce( (a,b) => {
+		return [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
+	});
+}
+
+function array_max(p: number[][]) {
+	return p.reduce( (a,b) => {
+		return [Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+	});
+}
+
 class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
-		const { p } = this.props;
+		const { p, center, scale } = this.props;
 		const polystr = p.map( (pt) => {
-			return String(pt[0]*10) + "," + String(pt[1]*10);
+			return String((pt[0]-center[0])*scale) + "," + String((pt[1]-center[1])*scale);
 		}).join(" ");
 
 		return <polygon style={{ fill: '#32a852' }} points={polystr} />;
@@ -37,12 +49,19 @@ export class MapPanel extends PureComponent<Props> {
 		} else {
 			polys = options.polys;
 		}
+		let poly_list = Object.keys(polys).map(k => polys[k]);
+		const min_coord = array_min(poly_list.map(array_min));
+		const max_coord = array_max(poly_list.map(array_max));
+		const center = [(min_coord[0]+max_coord[0])/2, (min_coord[1]+max_coord[1])/2];
+		const scale_x = width/(max_coord[0]-min_coord[0]);
+		const scale_y = height/(max_coord[1]-min_coord[1]);
+		const scale = Math.min(scale_x, scale_y);
 
 		// generate polygons
 		const mapPolys = powerData.map( (p) => {
 			let panelID: string = p.name as string;
 			let panelPoly: number[][] = polys[panelID];
-			return <MapPoly p={panelPoly} />
+			return <MapPoly p={panelPoly} center={center} scale={scale} />
 		});
 
 		return (
@@ -65,7 +84,7 @@ export class MapPanel extends PureComponent<Props> {
 					xmlnsXlink="http://www.w3.org/1999/xlink"
 					viewBox={`-${width / 2} -${height / 2} ${width} ${height}`}
 				>
-					<g transform="scale(200000,-200000) translate(1,-1)">
+					<g transform="scale(1,-1)">
 						{mapPolys}
 					</g>
 				</svg>
