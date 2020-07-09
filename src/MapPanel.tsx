@@ -11,10 +11,12 @@ function sql2dArrayStringToArray (a:string) {
 
 class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
-		const { x, y } = this.props;
-		const s = 50;
+		const { p } = this.props;
+		const polystr = p.map( (pt) => {
+			return String(pt[0]*10) + "," + String(pt[1]*10);
+		}).join(" ");
 
-		return <polygon style={{ fill: '#32a852' }} points={`${x},${y} ${x+s},${y} ${x+s},${y+s} ${x},${y+s}`} />;
+		return <polygon style={{ fill: '#32a852' }} points={polystr} />;
 	}
 }
 
@@ -40,8 +42,7 @@ export class MapPanel extends PureComponent<Props> {
 		const mapPolys = powerData.map( (p) => {
 			let panelID: string = p.name as string;
 			let panelPoly: number[][] = polys[panelID];
-			let panelOrigin: number[] = panelPoly[0];
-			<MapPoly x={panelOrigin[0] as number} y={panelOrigin[1] as number} />
+			return <MapPoly p={panelPoly} />
 		});
 
 		return (
@@ -64,8 +65,7 @@ export class MapPanel extends PureComponent<Props> {
 					xmlnsXlink="http://www.w3.org/1999/xlink"
 					viewBox={`-${width / 2} -${height / 2} ${width} ${height}`}
 				>
-					<g>
-						<MapPoly x={20} y={20} />
+					<g transform="scale(200000,-200000) translate(1,-1)">
 						{mapPolys}
 					</g>
 				</svg>
