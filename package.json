@@ -18,8 +18,8 @@
     "url": "https://github.com/bkurtz/grafana-map-panel/issues"
   },
   "devDependencies": {
-    "@grafana/data": "next",
-    "@grafana/toolkit": "next",
-    "@grafana/ui": "next"
+    "@grafana/data": "^7.1.0-beta.3",
+    "@grafana/toolkit": "^7.1.0-beta.3",
+    "@grafana/ui": "^7.1.0-beta.3"
   }
 }
