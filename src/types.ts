@@ -16,4 +16,5 @@ export interface ValuePolyProps {
 	p: number[][];
 	center: number[];
 	scale: number;
+	value: number;
 }

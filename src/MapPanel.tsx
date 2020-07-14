@@ -23,12 +23,12 @@ function array_max(p: number[][]) {
 
 class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
-		const { p, center, scale } = this.props;
+		const { p, center, scale, value } = this.props;
 		const polystr = p.map( (pt) => {
 			return String((pt[0]-center[0])*scale) + "," + String((pt[1]-center[1])*scale);
 		}).join(" ");
 
-		return <polygon style={{ fill: '#32a852' }} points={polystr} />;
+		return <polygon points={polystr} fill-opacity={value}/>;
 	}
 }
 
@@ -49,6 +49,7 @@ export class MapPanel extends PureComponent<Props> {
 		} else {
 			polys = options.polys;
 		}
+		// Compute map bounds
 		let poly_list = Object.keys(polys).map(k => polys[k]);
 		const min_coord = array_min(poly_list.map(array_min));
 		const max_coord = array_max(poly_list.map(array_max));
@@ -57,13 +58,23 @@ export class MapPanel extends PureComponent<Props> {
 		const scale_y = height/(max_coord[1]-min_coord[1]);
 		const scale = Math.min(scale_x, scale_y);
 
+		// compute maximum power
+		let max_power = 1.0; // TODO: eventually pull this from an option
+		// TODO: is doing .fields[0] okay, or do we need to look up which field to use based on name/time/etc
+		for(const p of powerData) {
+			max_power = p.fields[0].values.toArray().reduce((a,b) => Math.max(a,b), max_power)
+		}
+
 		// generate polygons
 		const mapPolys = powerData.map( (p) => {
 			let panelID: string = p.name as string;
 			let panelPoly: number[][] = polys[panelID];
-			return <MapPoly p={panelPoly} center={center} scale={scale} />
+			const allPower = p.fields[0].values;
+			const power = allPower.get(allPower.length-1); // most recent power for now
+			return <MapPoly p={panelPoly} center={center} scale={scale} value={power/max_power}/>
 		});
 
+		// TODO: eventually pull fill/stroke styles from an option
 		return (
 			<div
 				style={{
@@ -84,12 +95,12 @@ export class MapPanel extends PureComponent<Props> {
 					xmlnsXlink="http://www.w3.org/1999/xlink"
 					viewBox={`-${width / 2} -${height / 2} ${width} ${height}`}
 				>
-					<g transform="scale(1,-1)">
+					<g transform="scale(1,-1)" fill="#32a852" stroke="#32a852">
 						{mapPolys}
 					</g>
 				</svg>
 
-				<div
+				{/*<div
 					style={{
 						position: 'absolute',
 						bottom: 0,
@@ -99,7 +110,7 @@ export class MapPanel extends PureComponent<Props> {
 				>
 					<div>Count: {data.series.length}</div>
 					<div>{options.text}</div>
-				</div>
+				</div>*/}
 			</div>
 		);
 	}
