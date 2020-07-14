@@ -17,4 +17,5 @@ export interface ValuePolyProps {
 	center: number[];
 	scale: number;
 	value: number;
+	maxValue: number;
 }

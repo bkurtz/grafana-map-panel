@@ -23,12 +23,12 @@ function array_max(p: number[][]) {
 
 class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
-		const { p, center, scale, value } = this.props;
+		const { p, center, scale, value, maxValue } = this.props;
 		const polystr = p.map( (pt) => {
 			return String((pt[0]-center[0])*scale) + "," + String((pt[1]-center[1])*scale);
 		}).join(" ");
 
-		return <polygon points={polystr} fill-opacity={value}/>;
+		return <polygon points={polystr} fill-opacity={value/maxValue}/>;
 	}
 }
 
@@ -71,7 +71,7 @@ export class MapPanel extends PureComponent<Props> {
 			let panelPoly: number[][] = polys[panelID];
 			const allPower = p.fields[0].values;
 			const power = allPower.get(allPower.length-1); // most recent power for now
-			return <MapPoly p={panelPoly} center={center} scale={scale} value={power/max_power}/>
+			return <MapPoly p={panelPoly} center={center} scale={scale} value={power} maxValue={max_power} />;
 		});
 
 		// TODO: eventually pull fill/stroke styles from an option
