@@ -67,15 +67,21 @@ export class MapPanel extends PureComponent<Props> {
 		let max_power = 1.0; // TODO: eventually pull this from an option
 		// TODO: is doing .fields[0] okay, or do we need to look up which field to use based on name/time/etc
 		for (const p of powerData) {
-			max_power = p.fields[0].values.toArray().reduce((a, b) => Math.max(a, b), max_power);
+			max_power = p.fields
+				.find(field => field.type === 'number')
+				?.values.toArray()
+				.reduce((a, b) => Math.max(a, b), max_power);
 		}
 
 		// generate polygons
 		const mapPolys = powerData.map(p => {
 			let panelID: string = p.name as string;
 			let panelPoly: number[][] = polys[panelID];
-			const allPower = p.fields[0].values;
-			const power = allPower.get(allPower.length - 1); // most recent power for now
+			const allPower = p.fields.find(field => field.type === 'number')?.values;
+			let power = 0;
+			if (allPower?.length) {
+				power = allPower?.get(allPower?.length - 1); // most recent power for now
+			}
 			return <MapPoly p={panelPoly} center={center} scale={scale} value={power} maxValue={max_power} />;
 		});
 
