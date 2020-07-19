@@ -67,20 +67,22 @@ export class MapPanel extends PureComponent<Props> {
 		// Initialize state time
 		this.state = { time: 0 };
 		// Hack: Currently no official API to get sync status from other panels.  Based on introspection of the current dashboard (7.0.6), listening to 'plothover' events seems to get me the data I need.  Listen to these events directly so that we can update the power plot state accordingly.
+		// Hack: Install action handlers a little later (currently in 1sec) to make sure the other panels have been created enough to exist so we can bind to their events.
 		// bind functions
-		// TODO: delay this slightly to make sure the graph panels are set up
-		// TODO: plotleave callback never gets called.  Check that it's the right event?  Maybe just look for different conditions (e.g. y rel value to be outsize [0,1]) on the plothover playload?
-		$('div.graph-panel__chart').bind('plotleave', (event: any, pos: any, item: any) => {
-			console.log('plotleave');
-			if (this.state.time !== 0) {
-				this.setState({ time: 0 });
-			}
-		});
-		$('div.graph-panel__chart').bind('plothover', (event: any, pos: PlotHoverPayload, item: any) => {
-			if (this.state.time !== pos.x) {
-				this.setState({ time: pos.x });
-			}
-		});
+		let thisPanel = this;
+		setTimeout(() => {
+			// I was expecting to use `plotleave` event here instead of `mouseout`, but it never seems to get called, so use `mouseout` instead.
+			$('div.graph-panel__chart').bind('mouseout', (event: any, pos: any, item: any) => {
+				if (thisPanel.state.time !== 0) {
+					thisPanel.setState({ time: 0 });
+				}
+			});
+			$('div.graph-panel__chart').bind('plothover', (event: any, pos: PlotHoverPayload, item: any) => {
+				if (thisPanel.state.time !== pos.x) {
+					thisPanel.setState({ time: pos.x });
+				}
+			});
+		}, 1000);
 	}
 
 	render() {
