@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { PanelProps } from '@grafana/data';
-import { MapOptions, ValuePolyProps, PolyMap } from 'types';
+import { MapOptions, ValuePolyProps, PolyMap, PlotHoverPayload } from 'types';
 
 interface Props extends PanelProps<MapOptions> {}
 
@@ -10,6 +10,26 @@ function sql2dArrayStringToArray(a: string) {
 		.substring(2, a.length - 2)
 		.split(`},{`)
 		.map(x => x.split(`,`).map(y => +y));
+}
+
+function findIndexForData(val: number, series: number[]) {
+	// implementation mirrored from grafana's graph tooltip
+	let lower = 0;
+	let upper = series.length - 1;
+	let middle;
+	while (true) {
+		if (lower > upper) {
+			return Math.max(upper, 0);
+		}
+		middle = Math.floor((lower + upper) / 2);
+		if (series[middle] === val) {
+			return middle;
+		} else if (series[middle] < val) {
+			lower = middle + 1;
+		} else {
+			upper = middle - 1;
+		}
+	}
 }
 
 function array_min(p: number[][]) {
@@ -38,6 +58,31 @@ class MapPoly extends PureComponent<ValuePolyProps> {
 }
 
 export class MapPanel extends PureComponent<Props> {
+	state = {
+		time: 0,
+	};
+
+	constructor(props: Props) {
+		super(props);
+		// Initialize state time
+		this.state = { time: 0 };
+		// Hack: Currently no official API to get sync status from other panels.  Based on introspection of the current dashboard (7.0.6), listening to 'plothover' events seems to get me the data I need.  Listen to these events directly so that we can update the power plot state accordingly.
+		// bind functions
+		// TODO: delay this slightly to make sure the graph panels are set up
+		// TODO: plotleave callback never gets called.  Check that it's the right event?  Maybe just look for different conditions (e.g. y rel value to be outsize [0,1]) on the plothover playload?
+		$('div.graph-panel__chart').bind('plotleave', (event: any, pos: any, item: any) => {
+			console.log('plotleave');
+			if (this.state.time !== 0) {
+				this.setState({ time: 0 });
+			}
+		});
+		$('div.graph-panel__chart').bind('plothover', (event: any, pos: PlotHoverPayload, item: any) => {
+			if (this.state.time !== pos.x) {
+				this.setState({ time: pos.x });
+			}
+		});
+	}
+
 	render() {
 		const { options, data, width, height } = this.props;
 
@@ -65,7 +110,6 @@ export class MapPanel extends PureComponent<Props> {
 
 		// compute maximum power
 		let max_power = 1.0; // TODO: eventually pull this from an option
-		// TODO: is doing .fields[0] okay, or do we need to look up which field to use based on name/time/etc
 		for (const p of powerData) {
 			max_power = p.fields
 				.find(field => field.type === 'number')
@@ -78,9 +122,16 @@ export class MapPanel extends PureComponent<Props> {
 			let panelID: string = p.name as string;
 			let panelPoly: number[][] = polys[panelID];
 			const allPower = p.fields.find(field => field.type === 'number')?.values;
+			const allTime = p.fields.find(field => field.type === 'time')?.values;
 			let power = 0;
 			if (allPower?.length) {
-				power = allPower?.get(allPower?.length - 1); // most recent power for now
+				if (this.state.time === 0) {
+					// No timestamp set, use the latest data
+					power = allPower?.get(allPower?.length - 1);
+				} else {
+					const ind = findIndexForData(this.state.time, allTime?.toArray() as number[]);
+					power = allPower?.get(ind);
+				}
 			}
 			return <MapPoly p={panelPoly} center={center} scale={scale} value={power} maxValue={max_power} />;
 		});

@@ -19,3 +19,9 @@ export interface ValuePolyProps {
 	value: number;
 	maxValue: number;
 }
+
+// Copied-ish from grafana's GraphTooltip or something
+export interface PlotHoverPayload {
+	x: number;
+	y: number;
+}
