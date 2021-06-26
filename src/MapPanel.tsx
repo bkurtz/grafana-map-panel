@@ -9,7 +9,7 @@ function sql2dArrayStringToArray(a: string) {
 	return a
 		.substring(2, a.length - 2)
 		.split(`},{`)
-		.map(x => x.split(`,`).map(y => +y));
+		.map((x) => x.split(`,`).map((y) => +y));
 }
 
 function findIndexForData(val: number, series: number[]) {
@@ -32,6 +32,12 @@ function findIndexForData(val: number, series: number[]) {
 	}
 }
 
+function filterNullData(time: number[], data: number[]): [number[], number[]] {
+	const new_data = data.filter((element) => element !== null);
+	const new_time = time.filter((element, index) => data[index] !== null);
+	return [new_time, new_data];
+}
+
 function array_min(p: number[][]) {
 	return p.reduce((a, b) => {
 		return [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
@@ -48,12 +54,12 @@ class MapPoly extends PureComponent<ValuePolyProps> {
 	render() {
 		const { p, center, scale, value, maxValue } = this.props;
 		const polystr = p
-			.map(pt => {
+			.map((pt) => {
 				return String((pt[0] - center[0]) * scale) + ',' + String((pt[1] - center[1]) * scale);
 			})
 			.join(' ');
 
-		return <polygon points={polystr} fill-opacity={value / maxValue} />;
+		return <polygon points={polystr} fillOpacity={value / maxValue} />;
 	}
 }
 
@@ -88,8 +94,8 @@ export class MapPanel extends PureComponent<Props> {
 	render() {
 		const { options, data, width, height } = this.props;
 
-		const powerData = data.series.filter(x => x.refId === 'A');
-		const polyData = data.series.filter(x => x.refId === 'B');
+		const powerData = data.series.filter((x) => x.refId === 'A');
+		const polyData = data.series.filter((x) => x.refId === 'B');
 		// Get the configured map polygon coordinates, either from a data source (should be query B) or from the configuration
 		let polys: PolyMap = {};
 		if (polyData.length) {
@@ -102,7 +108,7 @@ export class MapPanel extends PureComponent<Props> {
 			polys = options.polys;
 		}
 		// Compute map bounds
-		let poly_list = Object.keys(polys).map(k => polys[k]);
+		let poly_list = Object.keys(polys).map((k) => polys[k]);
 		const min_coord = array_min(poly_list.map(array_min));
 		const max_coord = array_max(poly_list.map(array_max));
 		const center = [(min_coord[0] + max_coord[0]) / 2, (min_coord[1] + max_coord[1]) / 2];
@@ -114,29 +120,35 @@ export class MapPanel extends PureComponent<Props> {
 		let max_power = 1.0; // TODO: eventually pull this from an option
 		for (const p of powerData) {
 			max_power = p.fields
-				.find(field => field.type === 'number')
+				.find((field) => field.type === 'number')
 				?.values.toArray()
 				.reduce((a, b) => Math.max(a, b), max_power);
 		}
 
 		// generate polygons
-		const mapPolys = powerData.map(p => {
-			let panelID: string = p.name as string;
-			let panelPoly: number[][] = polys[panelID];
-			const allPower = p.fields.find(field => field.type === 'number')?.values;
-			const allTime = p.fields.find(field => field.type === 'time')?.values;
-			let power = 0;
-			if (allPower?.length) {
-				if (this.state.time === 0) {
-					// No timestamp set, use the latest data
-					power = allPower?.get(allPower?.length - 1);
-				} else {
-					const ind = findIndexForData(this.state.time, allTime?.toArray() as number[]);
-					power = allPower?.get(ind);
+		const allTime = powerData[0].fields.find((field) => field.type === 'time')?.values;
+		const mapPolys = powerData[0].fields
+			.filter((field) => field.type === 'number')
+			.map((p) => {
+				let panelID: string =
+					p !== undefined && p.labels !== undefined && 'metric' in p.labels ? p.labels['metric'] : 'unkown';
+				let panelPoly: number[][] = polys[panelID];
+				let power = 0;
+				let [notNullTime, notNullPower] = filterNullData(
+					allTime?.toArray() as number[],
+					p.values.toArray() as number[]
+				);
+				if (notNullPower.length) {
+					if (this.state.time === 0) {
+						// No timestamp set, use the latest data
+						power = notNullPower[notNullPower.length - 1];
+					} else {
+						const ind = findIndexForData(this.state.time, notNullTime as number[]);
+						power = notNullPower[ind];
+					}
 				}
-			}
-			return <MapPoly p={panelPoly} center={center} scale={scale} value={power} maxValue={max_power} />;
-		});
+				return <MapPoly key={panelID} p={panelPoly} center={center} scale={scale} value={power} maxValue={max_power} />;
+			});
 
 		// TODO: eventually pull fill/stroke styles from an option
 		return (
