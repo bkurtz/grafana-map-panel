@@ -26,3 +26,5 @@ work/
 ci/
 e2e-results/
 
+# Random config file that showed up
+jest.config.js
