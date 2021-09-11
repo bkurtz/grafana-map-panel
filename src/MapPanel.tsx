@@ -130,8 +130,7 @@ export class MapPanel extends PureComponent<Props> {
 		const mapPolys = powerData[0].fields
 			.filter((field) => field.type === 'number')
 			.map((p) => {
-				let panelID: string =
-					p !== undefined && p.labels !== undefined && 'metric' in p.labels ? p.labels['metric'] : 'unkown';
+				let panelID: string = p !== undefined && p.name !== undefined ? p.name : 'unkown';
 				let panelPoly: number[][] = polys[panelID];
 				let power = 0;
 				let [notNullTime, notNullPower] = filterNullData(
